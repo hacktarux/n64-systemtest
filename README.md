@@ -31,10 +31,6 @@ cargo install nust64
 ```
 4. Run `cargo run --release` to build the test rom.
 
-**Please note:** N64 roms require a bootcode called IPL3. This bootcode is expected to setup hardware and copy the rom into memory. n64-systemtest comes with its own IPL3, which will **NOT** run on hardware. Once there is a community built open-source IPL3, we'll switch to that.
-
-If you'd like to use your own IPL3: Reconfigure the IPL3 path used by the runner (nust64) in `.cargo/config.toml`.
-
 # Expanded test-set
 In addition to the regular set of tests, n64-systemtest has a few additional sets which can
 be enabled individually: timing, cycle and cop0hazard. Refer to cargo.toml for a detailed description.
@@ -59,6 +55,12 @@ Run the rom in your emulator of choice. Expect one of three things:
 
 # Troubleshooting
 n64-systemtest runs A LOT of tests. If things are very broken, it can be hard to figure out how make any progress. Some tips on how to make progress:
+
+## Booting
+n64-systemtest uses [libdragon's open source bootcode (IPL3)](https://github.com/DragonMinded/libdragon/tree/preview/boot). These are a few recommendations to help young emulators go through it:
+- You can skip RDRAM initialization by setting RI_SELECT to any nonzero value (normally, it is set to 0x14).
+- The bootcode will run a RSP DMA from RDRAM to SP IMEM using a RDRAM address > 8 MiB. Reading from those addresses cause [0s to be read](https://n64brew.dev/wiki/RDRAM_Interface#Accesses_outside_of_mapped_RDRAM_chips) (there is no RAM mirroring on N64), so the effect of that transfer is to clear most of IMEM.
+- The bootcode will run a RSP DMA from SP IMEM to RDRAM that is longer than SP IMEM (> 4 KiB). In this case, what happens is that the transfer [wraps around within IMEM](https://n64brew.dev/wiki/Reality_Signal_Processor/Interface#DMA_transfers) (it doesn't go reading from DMEM, it doesn't go reading from elsewhere the memory map). 
 
 ## Missing instructions
 (If you emulator supports LL, SC, DMFC0, DMTC0, feel free to skip this part)
